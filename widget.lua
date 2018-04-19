@@ -1,16 +1,16 @@
 -- Copyright 2013 mokasin
 -- This file is part of the Awesome Pulseaudio Widget (APW).
--- 
+--
 -- APW is free software: you can redistribute it and/or modify
 -- it under the terms of the GNU General Public License as published by
 -- the Free Software Foundation, either version 3 of the License, or
 -- (at your option) any later version.
--- 
+--
 -- APW is distributed in the hope that it will be useful,
 -- but WITHOUT ANY WARRANTY; without even the implied warranty of
 -- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 -- GNU General Public License for more details.
--- 
+--
 -- You should have received a copy of the GNU General Public License
 -- along with APW. If not, see <http://www.gnu.org/licenses/>.
 
@@ -35,6 +35,7 @@ local text_color_mute = '#3B0061' -- color of text
 -- End of configuration
 
 local awful = require("awful")
+local spawn_with_shell = awful.util.spawn_with_shell or awful.spawn.with_shell
 local wibox = require("wibox")
 local beautiful = require("beautiful")
 local pulseaudio = require("apw.pulseaudio")
@@ -49,26 +50,10 @@ text_color = beautiful.apw_text_colot or text_color
 
 local p = pulseaudio:Create()
 
-local pulseBar = awful.widget.progressbar()
+local pulseBar = wibox.widget.progressbar()
 
-pulseBar:set_width(width)
+pulseBar.forced_width = width
 pulseBar.step = step
-
-local function make_stack(w1, w2)
-    local ret = wibox.widget.base.make_widget()
-
-    ret.fit = function(self, ...) return w1:fit(...) end
-    ret.draw = function(self, wibox, cr, width, height)
-        w1:draw(wibox, cr, width, height)
-        w2:draw(wibox, cr, width, height)
-    end
-  
-    update = function() ret:emit_signal("widget::updated") end
-    w1:connect_signal("widget::updated", update)
-    w2:connect_signal("widget::updated", update)
-
-    return ret
-end
 
 local pulseWidget
 local pulseText
@@ -76,11 +61,20 @@ if show_text then
     pulseText = wibox.widget.textbox()
     pulseText:set_align("center")
     pulseText:set_font("Futura Md BT 14")
-    pulseWidget = wibox.layout.margin(make_stack(pulseBar, pulseText), 
-                                            margin_right, margin_left, 
+
+    -- pulseWidget = wibox.layout.margin(make_stack(pulseBar, pulseText), 
+    --                                         margin_right, margin_left, 
+    --                                         margin_top, margin_bottom)
+
+    pulseWidget = wibox.container.margin(wibox.widget {
+                                              pulseBar,
+                                              pulseText,
+                                              layout = wibox.layout.stack
+                                            },
+                                            margin_right, margin_left,
                                             margin_top, margin_bottom)
 else
-    pulseWidget = wibox.layout.margin(pulseBar, 
+    pulseWidget = wibox.container.margin(pulseBar,
                                             margin_right, margin_left,
                                             margin_top, margin_bottom)
 end
@@ -101,7 +95,6 @@ local function _update(mute)
 	font_color = p.Mute and text_color_mute or text_color
     if show_text then
         pulseText:set_markup('<span color="'..font_color..'">'..math.ceil(p.Volume*100)..'%</span>')
-        
     end
 end
 
@@ -112,12 +105,12 @@ end
 function pulseWidget.Up()
 	p:SetVolume(p.Volume + pulseBar.step)
 	_update()
-end	
+end
 
 function pulseWidget.Down()
 	p:SetVolume(p.Volume - pulseBar.step)
 	_update()
-end	
+end
 
 
 function pulseWidget.ToggleMute()
@@ -131,7 +124,7 @@ function pulseWidget.Update()
 end
 
 function pulseWidget.LaunchMixer()
-	awful.util.spawn_with_shell( mixer )
+	spawn_with_shell( mixer )
 end
 
 
@@ -143,6 +136,8 @@ pulseWidget:buttons(awful.util.table.join(
 		awful.button({ }, 5, pulseWidget.Down)
 	)
 )
+
+pulseWidget.pulse = p
 
 
 -- initialize
