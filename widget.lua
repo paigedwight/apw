@@ -15,19 +15,22 @@
 -- along with APW. If not, see <http://www.gnu.org/licenses/>.
 
 -- Configuration variables
-local width         = 40        -- width in pixels of progressbar
-local margin_right  = 0         -- right margin in pixels of progressbar 
-local margin_left   = 0         -- left margin in pixels of progressbar 
-local margin_top    = 0         -- top margin in pixels of progressbar 
-local margin_bottom = 0         -- bottom margin in pixels of progressbar  
-local step          = 0.05      -- stepsize for volume change (ranges from 0 to 1)
-local color         = '#698f1e' -- foreground color of progessbar
-local color_bg      = '#33450f' -- background color
-local color_mute    = '#be2a15' -- foreground color when muted
-local color_bg_mute = '#532a15' -- background color when muted
-local mixer         = 'pavucontrol' -- mixer command
-local show_text     = false     -- show percentages on progressbar
-local text_color    = '#fff' -- color of text
+local xresources      = require("beautiful.xresources")
+local colours         = xresources.get_current_theme();
+local width           = 60        -- width in pixels of progressbar
+local margin_right    = 0         -- right margin in pixels of progressbar 
+local margin_left     = 0         -- left margin in pixels of progressbar 
+local margin_top      = 0         -- top margin in pixels of progressbar 
+local margin_bottom   = 0         -- bottom margin in pixels of progressbar  
+local step            = 0.05      -- stepsize for volume change (ranges from 0 to 1)
+local color           = colours.foreground -- foreground color of progessbar
+local color_bg        = colours.background -- background color
+local color_mute      = colours.color0 -- foreground color when muted
+local color_bg_mute   = color_bg -- background color when muted
+local mixer           = 'pavucontrol' -- mixer command
+local show_text       = false     -- show percentages on progressbar
+local text_color      = '#fff' -- color of text
+local text_color_mute = '#3B0061' -- color of text
 
 -- End of configuration
 
@@ -72,6 +75,7 @@ local pulseText
 if show_text then
     pulseText = wibox.widget.textbox()
     pulseText:set_align("center")
+    pulseText:set_font("Futura Md BT 14")
     pulseWidget = wibox.layout.margin(make_stack(pulseBar, pulseText), 
                                             margin_right, margin_left, 
                                             margin_top, margin_bottom)
@@ -91,11 +95,12 @@ function pulseWidget.setColor(mute)
 	end
 end
 
-local function _update()
+local function _update(mute)
 	pulseBar:set_value(p.Volume)
 	pulseWidget.setColor(p.Mute)
-    if show_text then  
-        pulseText:set_markup('<span color="'..text_color..'">'..math.ceil(p.Volume*100)..'%</span>')
+	font_color = p.Mute and text_color_mute or text_color
+    if show_text then
+        pulseText:set_markup('<span color="'..font_color..'">'..math.ceil(p.Volume*100)..'%</span>')
         
     end
 end
